@@ -56,7 +56,7 @@ model Students {
     address    String
     gender     String
     studentNo  String   @unique
-    image     String?  
+    image     String?     @db.LongText
     status     Boolean   @default(false)
     courseId   String?
     Course     Course?   @relation(fields: [courseId], references: [id])

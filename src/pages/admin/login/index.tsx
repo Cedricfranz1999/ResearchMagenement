@@ -39,7 +39,7 @@ export default function AdminLogin() {
           Thesis Management System{" "}
         </p>
 
-        <div className=" h-1/2 w-1/4  bg-yellow-200 p-5  ">
+        <div className=" bg-yellow-200 p-5  "  style={{height:'400px', width:'500px'}}>
           <div className=" flex  h-full w-full  flex-col items-center bg-zinc-100 pt-10 ">
             <img className="  my-4 h-10  w-14 " src="/ccis-logo.png " />
             <p className=" pb-10  text-xs  text-gray-600  ">

@@ -136,7 +136,7 @@ export default function Home() {
         </div>
 
         <div
-          className=" h-1/2    bg-yellow-100 p-4   shadow-2xl  shadow-orange-300 "
+          className=" h-3/4    bg-yellow-100 p-4   shadow-2xl  shadow-orange-300 "
           style={{ width: "600px" }}
         >
           <div className=" flex  h-full w-full  flex-col items-center bg-yellow-100  ">
