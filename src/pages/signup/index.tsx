@@ -90,7 +90,9 @@ export default function Home() {
     console.log("radio checked", e.target.value);
     setValue(e.target.value);
   };
-  const handleChange = (value: string) => {};
+  const handleChange = (value: string) => {
+    console.log("hello");
+  };
 
   const getBase64 = (img: RcFile, callback: (url: string) => void) => {
     const reader = new FileReader();

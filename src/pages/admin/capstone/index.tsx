@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
@@ -5,7 +6,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-floating-promises */
 /* eslint-disable @typescript-eslint/no-floating-promises */
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import DashboardLayout from "~/pages/component/DashboardLayout";
 import PageHeader from "~/pages/component/PageHeader";
 import {
@@ -19,7 +20,11 @@ import {
   message,
   DatePicker,
   Select,
+  ConfigProvider,
 } from "antd";
+import { IoArrowForwardCircle } from "react-icons/io5";
+import { useReactToPrint } from "react-to-print";
+
 import { BiSolidAddToQueue } from "react-icons/bi";
 import { useRouter } from "next/router";
 import { DataType } from "~/pages/dataType/types";
@@ -48,13 +53,23 @@ const tabList = [
   },
 ];
 
-function AdminCapstone() {
+export function AdminCapstone() {
+  const componentRef = useRef(null);
+  const handlePrint = useReactToPrint({
+    content: () => componentRef.current,
+  });
   const [form] = Form.useForm();
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalOpenAbstract, setIsModalOpenAbstract] = useState(false);
+  const [abstract, setAbstract] = useState<any>("");
+
   const [capstoneData, setCapstoneData] = useState<string>();
   const [pickerDate, setPickerDate] = useState<any>("");
   const [searchValue, setSearchValue] = useState("");
+  const [departmentId, setDepartmentId] = useState("");
+  const [label, setLabel] = useState("");
+  const [capstoneType, setCapstoneType] = useState("");
 
   const { data: courseData } = api.example.courseData.useQuery();
 
@@ -65,6 +80,41 @@ function AdminCapstone() {
 
   const { data: approveData, refetch: refetchApprovedCapstone } =
     api.capstone.ApprovedCapstoneDetails.useQuery();
+  const { data: departmentData, refetch: refetchData } =
+    api.settings.getListOfDepartment.useQuery();
+
+  const { data: FilterCourse, refetch: refetchFilterData } =
+    api.settings.FilterCourseByDepartment.useQuery({ id: departmentId });
+
+  const { data: dataCourses, refetch: refetchCourses } =
+    api.settings.getListOfCourses.useQuery(
+      {
+        departmentId: departmentId,
+      },
+
+      { enabled: !!departmentId },
+    );
+
+  const [filterCourse, setFilterCourse] = useState(
+    FilterCourse?.[0]?.Course[0]?.id,
+  );
+
+  const departmentOptions = [
+    {
+      label: "Select Department",
+      options:
+        departmentData?.map((data) => ({
+          value: data.id,
+          label: data.depeartName,
+        })) || [],
+    },
+  ];
+  useEffect(() => {
+    if (departmentData) {
+      setDepartmentId(departmentData[0]?.id ?? "");
+    }
+  }, [departmentData]);
+
   const { mutate: mutateApprovalCapstone } =
     api.capstone.approveCapstone.useMutation({
       onSuccess: () => {
@@ -81,10 +131,14 @@ function AdminCapstone() {
       <div className="  flex  w-full flex-nowrap">
         <Table
           className=" w-full"
-          columns={capstoneApprovalColumn(setApproveModal, setCapstoneData)}
+          columns={capstoneApprovalColumn(
+            setApproveModal,
+            setCapstoneData,
+            setAbstract,
+          )}
           dataSource={data?.filter((item: any) => {
-            console.log(item?.Students?.[0]?.Course?.coursename.toLowerCase());
             return (
+              item.abstract.toLowerCase().includes(searchValue.toLowerCase()) ||
               item.title.toLowerCase().includes(searchValue.toLowerCase()) ||
               item.date.toLowerCase().includes(searchValue.toLowerCase()) ||
               item.adviser.toLowerCase().includes(searchValue.toLowerCase()) ||
@@ -100,10 +154,19 @@ function AdminCapstone() {
       <div className="  flex  w-full flex-nowrap">
         <Table
           className=" w-full"
-          columns={capstoneManagementColumn}
+          columns={capstoneManagementColumn(
+            setIsModalOpenAbstract,
+            isModalOpenAbstract,
+            setAbstract,
+          )}
           dataSource={approveData?.filter((item: any) => {
-            console.log(item?.Students?.[0]?.Course?.coursename.toLowerCase());
             return (
+              item.studentCourse
+                .toLowerCase()
+                .includes(searchValue.toLowerCase()) ||
+              item.topic.toLowerCase().includes(searchValue.toLowerCase()) ||
+              item.status.toLowerCase().includes(searchValue.toLowerCase()) ||
+              item.abstract.toLowerCase().includes(searchValue.toLowerCase()) ||
               item.title.toLowerCase().includes(searchValue.toLowerCase()) ||
               item.date.toLowerCase().includes(searchValue.toLowerCase()) ||
               item.adviser.toLowerCase().includes(searchValue.toLowerCase()) ||
@@ -166,8 +229,6 @@ function AdminCapstone() {
     },
   });
   const uploadImage = (e: any) => {
-    console.log("VAAALUES", e.date);
-
     if (!imageUpload) {
       form.setFields([
         {
@@ -182,14 +243,16 @@ function AdminCapstone() {
           const course = courseData?.find((data) => data.id === e.course);
           mutate({
             studentNo: e.capstoneLeader,
+            // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
             course: course?.coursename || "",
             studentMembers: e.studentMembers,
             title: e.title,
-            topic: e.topic,
+            topic: label,
             abstract: e.abstract,
             adviser: e.adviser,
             url: d,
             date: pickerDate,
+            status: capstoneType,
           });
         });
       });
@@ -206,8 +269,20 @@ function AdminCapstone() {
     }
   };
 
+  const fiterDepartmentValue = (value: string, option: any) => {
+    setLabel(option.label);
+    setDepartmentId(value);
+
+    form.setFieldValue("course", filterCourse);
+  };
+
+  const handleCapstoneType = (value: string, option: any) => {
+    setCapstoneType(option.label);
+
+    form.setFieldValue("course", filterCourse);
+  };
   const onFinishFailedCapstoneForm = (errorInfo: any) => {
-    console.log("Failed:", errorInfo);
+    console.log();
   };
   const showCapstoneModal = () => {
     setModalCapstone(true);
@@ -239,173 +314,303 @@ function AdminCapstone() {
     setPickerDate(formattedDate);
   };
 
+  console.log("HELLO ", approveData);
+  const filteredApproveData =
+    approveData?.filter((item: any) => {
+      return (
+        item.studentCourse.toLowerCase().includes(searchValue.toLowerCase()) ||
+        item.topic.toLowerCase().includes(searchValue.toLowerCase()) ||
+        item.status.toLowerCase().includes(searchValue.toLowerCase()) ||
+        item.abstract.toLowerCase().includes(searchValue.toLowerCase()) ||
+        item.title.toLowerCase().includes(searchValue.toLowerCase()) ||
+        item.date.toLowerCase().includes(searchValue.toLowerCase()) ||
+        item.adviser.toLowerCase().includes(searchValue.toLowerCase()) ||
+        item?.Students?.[0]?.Course?.coursename
+          .toLowerCase()
+          .includes(searchValue.toLowerCase())
+      );
+    }) || [];
+
+  // Get the length of filteredApproveData
+  const filteredApproveDataLength = filteredApproveData.length;
+
   return (
-    <DashboardLayout>
-      <Modal
-        title="Basic Modal"
-        open={approvalModal}
-        onOk={approvalModalOkay}
-        onCancel={approvalModalCancel}
-        footer={
-          <div>
-            <Button key="Cancel" onClick={approvalModalCancel}>
-              Cancel
-            </Button>
-            <Button className=" bg-blue-300" onClick={approvalModalOkay}>
-              OK
-            </Button>
-          </div>
-        }
-      >
-        Are you sure you want to approve this capstone?
-      </Modal>
-      <Modal
-        title="ADD CAPSTONE"
-        open={modalCapstone}
-        onOk={capstoneModalOk}
-        onCancel={capstoneModalCancel}
-        centered
-        width={600}
-        footer={[]}
-      >
-        <Form
-          name="basic"
-          onFinish={uploadImage}
-          onFinishFailed={onFinishFailedCapstoneForm}
-          autoComplete="off"
-          form={form}
+    <div>
+      <>
+        <Modal
+          onCancel={() => setIsModalOpenAbstract(false)}
+          open={isModalOpenAbstract}
+          width={700}
+          centered
+          footer={[]}
+          title="ABSTRACT"
         >
-          <Form.Item
-            name="capstoneLeader"
-            rules={[
-              {
-                required: true,
-                message: " Input  student leader",
+          <div className="  min-h-96  h-96 overflow-scroll bg-gray-200  px-10 pt-5">
+            {abstract}
+          </div>
+        </Modal>
+        <ConfigProvider
+          theme={{
+            components: {
+              Table: {
+                headerBg: "#3b9783",
+                rowHoverBg: "#4c4d58",
+                colorBgContainer: "#dbdbdb",
+                rowExpandedBg: "#dbdbdb",
+                footerBg: "red",
               },
-            ]}
-          >
-            <Input placeholder="student Leader" />
-          </Form.Item>
+            },
+          }}
+        >
+          <div className="flex flex-col  overflow-hidden   bg-[#ecf0f6]  ">
+            <div className="    mb-6 flex  justify-between   px-16 py-5 shadow-md ">
+              <div className=" flex  items-center justify-center gap-5">
+                {" "}
+                <img
+                  src="https://www.onlinekiosk.nwssu.edu.ph/img/nwssulogo.png"
+                  alt="NWSSU Logo"
+                  className="  h-16 w-16 "
+                />
+                <h1 className="  text-3xl font-extrabold  tracking-wider">
+                  {" "}
+                  <span className=" text-[#4a9284]"> NWSSU </span> |{" "}
+                  <span className=" text-[#f86e1e]">RESEARCH RECORDS</span>
+                </h1>
+              </div>
+              <div>
+                <PageHeaderAdmin />
+              </div>
+            </div>
+            <div
+              className="   overflow-hidden rounded-lg bg-[#ecf0f6] px-6 shadow-lg  "
+              style={{ minHeight: "100vh" }}
+            >
+              <div className="  mb-2 flex  justify-between ">
+                <div>
+                  <Search
+                    placeholder="search keywords"
+                    className=" rounded border border-solid border-gray-500 "
+                    style={{ width: 200 }}
+                    onChange={handleSearchChange}
+                  />
+                </div>
 
-          <Form.Item
-            name="studentMembers"
-            rules={[
-              {
-                required: true,
-                message: " Input  student  members",
-              },
-            ]}
+                <div
+                  onClick={showCapstoneModal}
+                  className={` bg  flex cursor-pointer items-center  justify-center  gap-3  rounded   bg-orange-400  p-2 hover:bg-orange-600  ${
+                    router.asPath === "/capstone" ? "hidden" : ""
+                  }`}
+                >
+                  <p className="font-extrabold  text-[#fff] "> ADD CAPSTONE</p>
+                  <BiSolidAddToQueue className=" h-6 w-6 text-white" />
+                </div>
+              </div>{" "}
+              <div className=" flex items-center justify-between ">
+                <p className=" my-2  ml-1  mt-10 rounded-lg bg-orange-400 p-2  font-bold  text-white hover:bg-orange-600 ">
+                  {" "}
+                  Total Studies: {filteredApproveDataLength}
+                </p>
+                <button
+                  onClick={handlePrint}
+                  className="  text-bold rounded-md  bg-blue-400 p-1 text-white hover:bg-blue-500"
+                >
+                  EXPORT DATA
+                </button>
+              </div>
+              <div ref={componentRef}>
+                <Table
+                  className=" w-full"
+                  columns={
+                    capstoneManagementColumn(
+                      setIsModalOpenAbstract,
+                      isModalOpenAbstract,
+                      setAbstract,
+                    ) as any
+                  }
+                  dataSource={filteredApproveData}
+                ></Table>
+              </div>
+            </div>
+          </div>
+        </ConfigProvider>
+      </>
+      <div className="hidden">
+        <Modal
+          title="Basic Modal"
+          open={approvalModal}
+          onOk={approvalModalOkay}
+          onCancel={approvalModalCancel}
+          footer={
+            <div>
+              <Button key="Cancel" onClick={approvalModalCancel}>
+                Cancel
+              </Button>
+              <Button className=" bg-blue-300" onClick={approvalModalOkay}>
+                OK
+              </Button>
+            </div>
+          }
+        >
+          Are you sure you want to approve this capstone?
+        </Modal>
+        <Modal
+          title="ADD CAPSTONE"
+          open={modalCapstone}
+          onOk={capstoneModalOk}
+          onCancel={capstoneModalCancel}
+          centered
+          width={600}
+          footer={[]}
+        >
+          <Form
+            name="basic"
+            onFinish={uploadImage}
+            onFinishFailed={onFinishFailedCapstoneForm}
+            autoComplete="off"
+            form={form}
           >
-            <Input placeholder="student Members" />
-          </Form.Item>
-
-          <Form.Item
-            name="course"
-            rules={[{ required: true, message: "Please Choose Course" }]}
-            className=" items-center"
-          >
-            {courseData && (
+            <Form.Item
+              name="capstoneLeader"
+              rules={[
+                {
+                  required: true,
+                  message: " Input  student leader",
+                },
+              ]}
+            >
               <Select
-                className="flex h-8 min-w-full text-center"
-                defaultValue="Choose Your Course"
+                size="small"
+                className="h-8 min-w-full flex-1 "
+                placeholder="Research Type"
                 style={{ width: 200 }}
                 options={[
-                  {
-                    label: "List Of Course",
-                    options: courseData.map((data) => ({
-                      label: data.coursename,
-                      value: data.id,
-                    })),
-                  },
+                  { value: "Capstone ", label: " Capstone" },
+                  { value: "Thesis", label: "Thesis" },
                 ]}
+                onChange={handleCapstoneType}
               />
-            )}
-          </Form.Item>
+            </Form.Item>
 
-          <Form.Item
-            name="title"
-            rules={[
-              {
-                required: true,
-                message: "Please input your Capstone title",
-              },
-            ]}
-          >
-            <Input placeholder="Capstone Title" />
-          </Form.Item>
-
-          <Form.Item
-            name="topic"
-            rules={[{ required: true, message: "Please input Topic Name  " }]}
-          >
-            <Input placeholder="Your Capstone  Topic" />
-          </Form.Item>
-
-          <Form.Item
-            name="abstract"
-            rules={[{ required: true, message: "Please input Abstract  " }]}
-          >
-            <Input placeholder="Input Abstract" />
-          </Form.Item>
-
-          <Form.Item
-            name="adviser"
-            rules={[{ required: true, message: "Please input Adviser Name  " }]}
-          >
-            <Input placeholder=" Adviser Name" />
-          </Form.Item>
-
-          <Form.Item
-            name="date"
-            rules={[{ required: true, message: "Please  Select date  " }]}
-            label="Date of Submission"
-          >
-            <DatePicker onChange={handleDateChange} />
-          </Form.Item>
-          <App
-            imageUpload={imageUpload}
-            setImageUpload={setImageUpload}
-            form={form}
-          />
-          <Form.Item wrapperCol={{ offset: 8, span: 16 }}>
-            <Button
-              className="flex items-end bg-orange-400"
-              type="primary"
-              htmlType="submit"
+            <Form.Item
+              name="studentMembers"
+              rules={[
+                {
+                  required: true,
+                  message: " Input  Student  members",
+                },
+              ]}
             >
-              Submit
-            </Button>
-          </Form.Item>
-        </Form>
-      </Modal>
-      <PageHeaderAdmin />
-      <div className="  mb-14 flex  justify-between ">
-        <div>
-          <Search
-            placeholder="input search text"
-            className=" rounded border border-solid border-gray-500 "
-            style={{ width: 200 }}
-            onChange={handleSearchChange}
-          />
-        </div>
+              <textarea
+                placeholder="Student Members"
+                className="  h-32   w-full border border-gray-200 p-4 "
+              />
+            </Form.Item>
 
-        <div
-          onClick={showCapstoneModal}
-          className=" bg  flex cursor-pointer items-center  justify-center  gap-3  rounded  border border-solid border-gray-500 bg-[#ece7a2]  p-2 "
-        >
-          <p className="font-extrabold"> ADD CAPSTONE</p>
-          <BiSolidAddToQueue className=" h-6 w-6" />
-        </div>
-      </div>{" "}
-      <Card
-        style={{ width: "100%" }}
-        tabList={tabList}
-        activeTabKey={activeTabKey1}
-        onTabChange={onTab1Change}
-      >
-        {adminCapstonTab[activeTabKey1]}
-      </Card>
-    </DashboardLayout>
+            <div className=" flex w-full   items-start justify-center gap-12">
+              <Form.Item
+                name="topic"
+                rules={[
+                  { required: true, message: "Please input Department  " },
+                ]}
+              >
+                <Select
+                  className=" min-h-12    mt-1 w-full flex-1"
+                  size="small"
+                  placeholder="Select Department"
+                  style={{ width: 200 }}
+                  onChange={fiterDepartmentValue}
+                  options={departmentOptions}
+                />
+              </Form.Item>
+              <Form.Item
+                name="course"
+                rules={[{ required: true, message: "Please Choose Course" }]}
+                className="w-full flex-1"
+              >
+                {courseData && (
+                  <Select
+                    placeholder="Select Course"
+                    defaultActiveFirstOption={true}
+                    size="small"
+                    className="h-8 min-w-full flex-1 "
+                    style={{ width: 200 }}
+                    options={[
+                      {
+                        label: "Select Course",
+                        options: FilterCourse
+                          ? FilterCourse?.[0]?.Course.map((data) => ({
+                              label: data.coursename,
+                              value: data.id,
+                            }))
+                          : [],
+                      },
+                    ]}
+                  />
+                )}
+              </Form.Item>
+            </div>
+
+            <Form.Item
+              name="title"
+              rules={[
+                {
+                  required: true,
+                  message: "Please input your Capstone title",
+                },
+              ]}
+            >
+              <Input placeholder="Capstone Title" />
+            </Form.Item>
+
+            <Form.Item
+              name="topic"
+              rules={[{ required: true, message: "Please input Topic Name  " }]}
+            ></Form.Item>
+
+            <Form.Item
+              name="abstract"
+              rules={[{ required: true, message: "Please input Abstract  " }]}
+            >
+              <textarea
+                className="  h-32   w-full border border-gray-200 p-4"
+                placeholder="Input Abstract  "
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="adviser"
+              rules={[
+                { required: true, message: "Please input Adviser Name  " },
+              ]}
+            >
+              <Input placeholder=" Adviser Name" />
+            </Form.Item>
+
+            <Form.Item
+              name="date"
+              rules={[{ required: true, message: "Please  Select date  " }]}
+              label="Date of Submission"
+            >
+              <DatePicker onChange={handleDateChange} />
+            </Form.Item>
+            <App
+              imageUpload={imageUpload}
+              setImageUpload={setImageUpload}
+              form={form}
+            />
+            <Form.Item wrapperCol={{ offset: 8, span: 16 }}>
+              <Button
+                className="flex items-end bg-[#3b9783]  "
+                type="primary"
+                htmlType="submit"
+              >
+                Submit
+              </Button>
+            </Form.Item>
+          </Form>
+        </Modal>
+      </div>
+    </div>
   );
 }
 

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-floating-promises */
-import { Button, Checkbox, Form, Input } from "antd";
+import { Button, Checkbox, Form, Input, Modal } from "antd";
 import Head from "next/head";
 import Link from "next/link";
 import { LockOutlined, UserOutlined } from "@ant-design/icons";
@@ -7,106 +7,86 @@ import { useRouter } from "next/router";
 import { api } from "~/utils/api";
 import { useEffect } from "react";
 import App from "./sampleUpload";
+import Image from "next/image";
+import { IoIosPaper } from "react-icons/io";
+import { MdOutlineFileDownload } from "react-icons/md";
+import { IoMdSchool } from "react-icons/io";
 
 export default function Home() {
   const router = useRouter();
-  const [form] = Form.useForm();
-
-  const { mutate } = api.example.loginStudent.useMutation({
-    onSuccess: (data) => {
-      if (data) {
-        router.push("/capstone");
-        localStorage.setItem("username", data.username);
-        localStorage.setItem("id", data.id);
-      } else {
-        alert("Invalid Credentials");
-      }
-    },
-  });
-
-  const onFinish = (values: any) => {
-    mutate({
-      username: form.getFieldValue("username"),
-      password: form.getFieldValue("password"),
-    });
-  };
-
-  useEffect(() => {
-    if (localStorage.getItem("username")) {
-      router.push("/capstone");
-    }
-  });
-
   return (
     <>
-      <div className=" flex h-screen w-full flex-col items-center justify-center    bg-green-50  ">
-        <p className="   pb-6  font-bold  text-gray-600 ">
-          {" "}
-          Thesis Management System{" "}
-        </p>
+      <div className=" flex h-screen  w-full items-center justify-center">
+        <div
+          id="bg1"
+          className="    relative  h-screen w-full   scale-100  items-center   justify-center    bg-cover bg-center blur-md brightness-50  invert md:filter-none
 
-        <div className="bg-yellow-200 p-5  "  style={{height:'400px', width:'500px'} }>
-          <div className=" flex  h-full w-full  flex-col items-center bg-zinc-100 pt-10 ">
-            <img className="  my-4 h-10  w-14 " src="/ccis-logo.png " />
-            <p className=" pb-10  text-xs  text-gray-600  ">
-              {" "}
-              College Of Computing and Information Technology{" "}
-            </p>
-            <div className=" flex flex-col items-center justify-center">
-              <Form
-                name="normal_login"
-                className="login-form"
-                form={form}
-                onFinish={onFinish}
+        "
+        ></div>
+
+        <div
+          className=" absolute  top-40   flex   flex-col  justify-center gap-5     rounded-lg bg-white "
+          style={{ width: "430px", height: "350px" }}
+        >
+          <div className=" mt-2    flex items-center  justify-center gap-2 ">
+            <img
+              src="https://www.onlinekiosk.nwssu.edu.ph/img/nwssulogo.png"
+              alt="NWSSU Logo"
+              className="  h-16 w-16 "
+            />
+            <div className=" mt-2 flex  flex-col ">
+              <h2
+                className="  text-[#44444b ] font-bold
+tracking-wider"
               >
-                <Form.Item
-                  name="username"
-                  rules={[
-                    {
-                      required: true,
-                      message: "Please input your student ID!",
-                    },
-                  ]}
-                  className=" items-center"
-                >
-                  <input
-                    className=" flex h-8  w-full border-2   border-gray-400 text-center"
-                    placeholder="Username"
-                  />
-                </Form.Item>
-                <Form.Item
-                  name="password"
-                  rules={[
-                    { required: true, message: "Please input your Password!" },
-                  ]}
-                >
-                  <input
-                    className=" flex   h-8 w-72 border-2     border-gray-400 text-center"
-                    type="password"
-                    placeholder="Password"
-                  />
-                </Form.Item>
+                Northwest Samar State University
+              </h2>
+              <small
+                className=" text-[#44444b   ] text-center text-xs
+font-bold"
+              >
+                Resiliency • Integrity • Service • Excellence
+              </small>
+            </div>
+          </div>
+          <div className=" flex h-full  w-full flex-1   flex-col items-center  justify-start  gap-10 rounded-lg bg-[#ebeef1] px-6 pt-10 ">
+            <h1
+              className="   animate-bounce    bg-slate-200 text-xl
+               font-extrabold
+tracking-widest text-[#f85412] "
+            >
+              RESEARCH MANAGEMENT
+            </h1>
+            <div className="flex   gap-5 text-gray-200">
+              <div className=" flex h-14 w-14 items-center justify-center  rounded-lg   bg-gray-400 p-2">
+                {" "}
+                <IoIosPaper size={50} className=" " />
+              </div>
 
-                <Form.Item className="  ">
-                  <div className=" flex  justify-center gap-5">
-                    <button
-                      className="      p-4 py-1"
-                      style={{ backgroundColor: "#7AC8AE" }}
-                    >
-                      Login
-                    </button>
-                    <button
-                      className="       p-4 py-1"
-                      style={{ backgroundColor: "#36D7A1" }}
-                      onClick={() => {
-                        router.push("/signup");
-                      }}
-                    >
-                      Signup
-                    </button>
-                  </div>
-                </Form.Item>
-              </Form>
+              <div className=" flex h-14  w-14 items-center justify-center  rounded-lg bg-gray-400 p-2">
+                {" "}
+                <MdOutlineFileDownload size={50} />
+              </div>
+
+              <div className=" flex h-14  w-14 items-center justify-center  rounded-lg  bg-gray-400 p-2">
+                {" "}
+                <IoMdSchool size={50} />
+              </div>
+            </div>
+
+            <div
+              className=" ]  flex h-10 w-full cursor-pointer
+items-center justify-center rounded-xl  bg-[#3b9778]  hover:brightness-150 "
+            >
+              <p
+                // eslint-disable-next-line @typescript-eslint/no-misused-promises
+                onClick={() => router.push("/capstone")}
+                className=" animate-pulse text-xl  font-extrabold tracking-widest
+               text-white   hover:text-yellow-200"
+              >
+                {" "}
+                VIEW STUDIES{" "}
+              </p>
             </div>
           </div>
         </div>

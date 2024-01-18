@@ -112,7 +112,6 @@ const ModalComponent = ({
   };
 
   const editProfilepicture = (values: StudentType) => {
-    console.log(values);
     mutate({
       id: studentData?.id || "",
       firstname: values.firstname,

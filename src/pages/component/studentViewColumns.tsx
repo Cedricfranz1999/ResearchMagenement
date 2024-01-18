@@ -47,21 +47,14 @@ export const studentsViewColumn: any = (studentData: any) => {
           href={_.url}
           size="middle"
           className="flex w-fit flex-row gap-2 rounded bg-blue-300 px-4"
-          disabled={!studentData?.status} // Disable the button when status is false
         >
-          {studentData?.status ? (
-            // If status is true, show the download icon and text
-            <>
-              <div className=" flex gap-3">
-                {" "}
-                <BsDownload />
-                <p> Download </p>
-              </div>
-            </>
-          ) : (
-            // If status is false, show the not verified text
-            <span className="  text-red-400"> Not Verified Student</span>
-          )}
+          <>
+            <div className=" flex gap-3">
+              {" "}
+              <BsDownload />
+              <p> Download </p>
+            </div>
+          </>
         </Button>
       ),
     },

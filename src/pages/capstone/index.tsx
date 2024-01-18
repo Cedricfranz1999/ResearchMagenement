@@ -18,7 +18,10 @@ import {
   Button,
   Upload,
   message,
+  ConfigProvider,
 } from "antd";
+import { IoArrowForwardCircle } from "react-icons/io5";
+
 import { DownOutlined } from "@ant-design/icons";
 import type { RadioChangeEvent } from "antd";
 import { useState } from "react";
@@ -35,6 +38,7 @@ import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { storage } from "~/config/firebase";
 import { v4 } from "uuid";
 import App from "../sampleUpload";
+import AdminCapstone from "../admin/capstone";
 const { Search } = Input;
 
 function Capstone() {
@@ -56,8 +60,6 @@ function Capstone() {
 
   const [value, setValue] = useState(1);
   const [course, setCourse] = useState("");
-
-  console.log("XXXXX", approvedCapstone);
 
   const showModal = () => {
     setIsModalOpen(true);
@@ -101,10 +103,6 @@ function Capstone() {
   useEffect(() => {
     form.setFieldValue("capstoneLeader", studentData?.studentNo);
     form.setFieldValue("studentCourse", studentData?.Course?.coursename);
-
-    if (typeof window !== "undefined" && !localStorage.getItem("username")) {
-      router.push("/");
-    }
   });
 
   // Search functionality
@@ -157,190 +155,7 @@ function Capstone() {
   };
   return (
     <>
-      <DashboardLayout>
-        <ModalComponent
-          isModalOpen={isModalOpen}
-          handleOk={handleOk}
-          refetch={refetch}
-          handleCancel={handleCancel}
-          onFinish={onFinish}
-          onChange={handleChange}
-        />
-        <Modal
-          title="ADD CAPSTONE"
-          open={modalCapstone}
-          onOk={capstoneModalOk}
-          onCancel={capstoneModalCancel}
-          centered
-          width={600}
-          footer={[]}
-        >
-          <Form
-            name="basic"
-            onFinish={uploadImage}
-            onFinishFailed={onFinishFailedCapstoneForm}
-            autoComplete="off"
-            form={form}
-          >
-            <Form.Item
-              name="capstoneLeader"
-              rules={[
-                {
-                  required: true,
-                  message: " Input  student leader",
-                },
-              ]}
-              className="bg-gray-200"
-            >
-              <Input placeholder="student Leader" disabled />
-            </Form.Item>
-
-            <Form.Item
-              name="studentCourse"
-              rules={[
-                {
-                  required: true,
-                  message: " Input  student Course",
-                },
-              ]}
-              className="bg-gray-200"
-            >
-              <Input placeholder="student Leader" disabled />
-            </Form.Item>
-
-            <Form.Item
-              name="studentMembers"
-              rules={[
-                {
-                  required: true,
-                  message: " Input  student  members",
-                },
-              ]}
-            >
-              <Input placeholder="student Members" />
-            </Form.Item>
-
-            <Form.Item
-              name="title"
-              rules={[
-                {
-                  required: true,
-                  message: "Please input your Capstone title",
-                },
-              ]}
-            >
-              <Input placeholder="Capstone Title" />
-            </Form.Item>
-
-            <Form.Item
-              name="topic"
-              rules={[{ required: true, message: "Please input Topic Name  " }]}
-            >
-              <Input placeholder="Your Capstone  Topic" />
-            </Form.Item>
-
-            <Form.Item
-              name="abstract"
-              rules={[{ required: true, message: "Please input Abstract  " }]}
-            >
-              <Input placeholder="Input Abstract" />
-            </Form.Item>
-
-            <Form.Item
-              name="adviser"
-              rules={[
-                { required: true, message: "Please input Adviser Name  " },
-              ]}
-            >
-              <Input placeholder=" Abstract" />
-            </Form.Item>
-            <App
-              imageUpload={imageUpload}
-              setImageUpload={setImageUpload}
-              form={form}
-            />
-            <Form.Item wrapperCol={{ offset: 8, span: 16 }}>
-              <Button
-                className="flex items-end bg-orange-400"
-                type="primary"
-                htmlType="submit"
-              >
-                Submit
-              </Button>
-            </Form.Item>
-          </Form>
-        </Modal>
-        <div className='   className="border " h-full  w-full border-solid  border-gray-500'>
-          <PageHeader studentData={studentData} showModal={showModal} />
-          <div className="  mb-14 flex  justify-between ">
-            <div>
-              <Search
-                placeholder="input search text"
-                className="rounded border border-solid border-gray-500"
-                style={{ width: 200 }}
-                onChange={handleSearchChange}
-                value={searchValue}
-              />
-            </div>
-
-            {studentData?.capstone ? (
-              studentData.capstone.status === "approved" ? (
-                <button
-                  onClick={showCapstoneModal}
-                  disabled
-                  className="bg flex cursor-pointer items-center justify-center gap-3 rounded border border-solid border-gray-500 bg-[#ece7a2] p-2"
-                >
-                  <p className="font-extrabold">Capstone Approved</p>
-                </button>
-              ) : (
-                <button
-                  onClick={showCapstoneModal}
-                  disabled
-                  className="bg flex cursor-pointer items-center justify-center gap-3 rounded border border-solid border-gray-500 bg-[#ece7a2] p-2"
-                >
-                  <p className="font-extrabold">Added Capstone is Pending</p>
-                </button>
-              )
-            ) : studentData?.status ? (
-              <button
-                onClick={showCapstoneModal}
-                className="bg flex cursor-pointer items-center justify-center gap-3 rounded border border-solid border-gray-500 bg-[#ece7a2] p-2"
-              >
-                <p className="font-extrabold">ADD CAPSTONE</p>
-                <BiSolidAddToQueue className="h-6 w-6" />
-              </button>
-            ) : (
-              <button
-                onClick={showCapstoneModal}
-                disabled
-                className="bg flex cursor-pointer items-center justify-center gap-3 rounded border border-solid border-gray-500 bg-gray-200 p-2"
-              >
-                <p className="font-extrabold">Student not Approved</p>
-                <BiSolidAddToQueue className="h-6 w-6" />
-              </button>
-            )}
-          </div>
-
-          <Table
-            columns={studentsViewColumn(studentData)}
-            dataSource={approvedCapstone?.filter((item: any) => {
-              console.log(
-                item?.Students?.[0]?.Course?.coursename.toLowerCase(),
-              );
-              return (
-                item.title.toLowerCase().includes(searchValue.toLowerCase()) ||
-                item.date.toLowerCase().includes(searchValue.toLowerCase()) ||
-                item.adviser
-                  .toLowerCase()
-                  .includes(searchValue.toLowerCase()) ||
-                item?.Students?.[0]?.Course?.coursename
-                  .toLowerCase()
-                  .includes(searchValue.toLowerCase())
-              );
-            })}
-          />
-        </div>
-      </DashboardLayout>
+      <AdminCapstone />
     </>
   );
 }

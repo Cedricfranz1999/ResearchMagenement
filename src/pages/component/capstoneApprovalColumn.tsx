@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { Button, Image, Space, Tag } from "antd";
 import type { ColumnsType } from "antd/es/table";
@@ -8,6 +9,7 @@ import { BsCheckCircleFill } from "react-icons/bs";
 export const capstoneApprovalColumn: any = (
   setApproveModal: any,
   setCapstoneData: any,
+  setAbstract: any,
 ) => {
   return [
     {

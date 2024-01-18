@@ -19,6 +19,7 @@ export const capstoneRouter = createTRPCRouter({
         url: z.string(),
         studentMembers: z.string(),
         studentNo: z.string(),
+        status: z.string(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -39,7 +40,7 @@ export const capstoneRouter = createTRPCRouter({
               adviser: input.adviser,
               url: input.url,
               studentMembers: input.studentMembers,
-              status: "approved",
+              status: input.status,
             },
             include: {
               Students: true,
@@ -73,46 +74,28 @@ export const capstoneRouter = createTRPCRouter({
         studentMembers: z.string(),
         studentNo: z.string(),
         date: z.string(),
+        status: z.string(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const hasStudent = await ctx.prisma.students.findUnique({
-        where: {
-          studentNo: input.studentNo,
+      const createCapstone = await ctx.prisma.capstone.create({
+        data: {
+          studentCourse: input.course,
+          date: input.date,
+          title: input.title,
+          abstract: input.abstract,
+          topic: input.topic,
+          adviser: input.adviser,
+          url: input.url,
+          studentMembers: input.studentMembers,
+          status: input.status,
+        },
+        include: {
+          Students: true,
         },
       });
-      if (hasStudent && !hasStudent?.capstoneId) {
-        const createCapstone = await ctx.prisma.capstone
-          .create({
-            data: {
-              studentCourse: input.course,
-              date: input.date,
-              title: input.title,
-              abstract: input.abstract,
-              topic: input.topic,
-              adviser: input.adviser,
-              url: input.url,
-              studentMembers: input.studentMembers,
-              status: "approved",
-            },
-            include: {
-              Students: true,
-            },
-          })
-          .then(async (data) => {
-            return await ctx.prisma.students.update({
-              where: {
-                studentNo: input.studentNo,
-              },
-              data: {
-                capstoneId: data.id,
-              },
-            });
-          });
-        return createCapstone;
-      } else {
-        return null;
-      }
+
+      return createCapstone;
     }),
 
   notApprovedCapstone: publicProcedure
@@ -187,13 +170,14 @@ export const capstoneRouter = createTRPCRouter({
 
   ApprovedCapstoneDetails: publicProcedure.query(({ ctx }) => {
     return ctx.prisma.capstone.findMany({
-      where: {
-        status: "approved",
-      },
       include: {
         Students: {
           include: {
-            Course: true,
+            Course: {
+              include: {
+                Departments: true,
+              },
+            },
           },
         },
       },

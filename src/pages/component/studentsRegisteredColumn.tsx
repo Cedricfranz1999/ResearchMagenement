@@ -37,7 +37,6 @@ export const studentsRegisteredColumn: ColumnsType<any> = [
     title: "      StudentName",
     key: "name",
     render: (_: any, record: any) => {
-      console.log("123", _);
       return (
         <div>
           {" "}
