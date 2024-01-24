@@ -13,7 +13,6 @@ function App({ setImageUpload }: any) {
     <div>
       <Form.Item name={"capstoneFile"}>
         <input
-          placeholder="aaa"
           type="file"
           onChange={(event) => {
             setImageUpload(event.target.files?.[0]);

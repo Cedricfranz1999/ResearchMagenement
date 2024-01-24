@@ -39,6 +39,9 @@ import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { v4 } from "uuid";
 import dayjs from "dayjs";
 import PageHeaderAdmin from "~/pages/component/pageHeaderAdmin";
+import AppUploaded from "~/pages/sampleUploadUpdated";
+import { eventNames } from "process";
+import { any } from "zod";
 
 const { Search } = Input;
 
@@ -59,20 +62,26 @@ export function AdminCapstone() {
     content: () => componentRef.current,
   });
   const [form] = Form.useForm();
+  const [form2] = Form.useForm();
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isModalOpenAbstract, setIsModalOpenAbstract] = useState(false);
   const [abstract, setAbstract] = useState<any>("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [capstoneData, setCapstoneData] = useState<string>();
   const [pickerDate, setPickerDate] = useState<any>("");
   const [searchValue, setSearchValue] = useState("");
   const [departmentId, setDepartmentId] = useState("");
+  const [clickUpdateUrl, setClickUpdateUrl] = useState(false);
+  const [handledepartmentId1, setHandleDepartmentId] = useState("");
+
   const [label, setLabel] = useState("");
   const [capstoneType, setCapstoneType] = useState("");
+  const [updateCapstoneData, setUpdateCapstoneData] = useState<any>([]);
 
   const { data: courseData } = api.example.courseData.useQuery();
-
+  const [courseState, setCourseState] = useState<any>(null);
   const [approvalModal, setApproveModal] = useState(false);
 
   const [activeTabKey1, setActiveTabKey1] = useState<string>("tab1");
@@ -80,11 +89,17 @@ export function AdminCapstone() {
 
   const { data: approveData, refetch: refetchApprovedCapstone } =
     api.capstone.ApprovedCapstoneDetails.useQuery();
+
   const { data: departmentData, refetch: refetchData } =
     api.settings.getListOfDepartment.useQuery();
 
   const { data: FilterCourse, refetch: refetchFilterData } =
     api.settings.FilterCourseByDepartment.useQuery({ id: departmentId });
+
+  const { data: FilterCourseUpdated, refetch: refetchFilterDataUpdated } =
+    api.settings.UpdateFilterCourseByDepartment.useQuery({
+      id: handledepartmentId1,
+    });
 
   const { data: dataCourses, refetch: refetchCourses } =
     api.settings.getListOfCourses.useQuery(
@@ -109,6 +124,7 @@ export function AdminCapstone() {
         })) || [],
     },
   ];
+
   useEffect(() => {
     if (departmentData) {
       setDepartmentId(departmentData[0]?.id ?? "");
@@ -124,7 +140,10 @@ export function AdminCapstone() {
     });
 
   const [modalCapstone, setModalCapstone] = useState(false);
+  const [updateModalCapstone, setUpdateModalCapstone] = useState(false);
+
   const [imageUpload, setImageUpload] = useState<any>(null);
+  const [imageUploadUpdate, setImageUploadUpdate] = useState<any>(null);
 
   const adminCapstonTab: Record<string, React.ReactNode> = {
     tab1: (
@@ -158,6 +177,8 @@ export function AdminCapstone() {
             setIsModalOpenAbstract,
             isModalOpenAbstract,
             setAbstract,
+            setUpdateModalCapstone,
+            setCapstoneData,
           )}
           dataSource={approveData?.filter((item: any) => {
             return (
@@ -228,6 +249,29 @@ export function AdminCapstone() {
       refetchApprovedCapstone();
     },
   });
+
+  const { mutate: updateMutate } = api.capstone.updateCapstone.useMutation({
+    onSuccess: (data) => {
+      setUpdateModalCapstone(false);
+
+      if (!data) {
+        window.alert("Student not Registered or Already submitted a Capstone");
+
+        form.setFields([
+          {
+            name: "capstoneLeader",
+            errors: ["Student not Registered or Already submitted a Capstone"],
+          },
+        ]);
+      } else {
+        form.resetFields();
+        setModalCapstone(false);
+      }
+      refetch();
+      refetchApprovedCapstone();
+    },
+  });
+
   const uploadImage = (e: any) => {
     if (!imageUpload) {
       form.setFields([
@@ -243,8 +287,10 @@ export function AdminCapstone() {
           const course = courseData?.find((data) => data.id === e.course);
           mutate({
             studentNo: e.capstoneLeader,
+
             // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-            course: course?.coursename || "",
+            course: course?.id || "",
+
             studentMembers: e.studentMembers,
             title: e.title,
             topic: label,
@@ -253,6 +299,7 @@ export function AdminCapstone() {
             url: d,
             date: pickerDate,
             status: capstoneType,
+            courseId: course?.id || "",
           });
         });
       });
@@ -270,7 +317,7 @@ export function AdminCapstone() {
   };
 
   const fiterDepartmentValue = (value: string, option: any) => {
-    setLabel(option.label);
+    setLabel(value);
     setDepartmentId(value);
 
     form.setFieldValue("course", filterCourse);
@@ -309,17 +356,44 @@ export function AdminCapstone() {
     }
   });
 
+  const [nwssuDepartment, setNwssuDepartment] = useState(
+    updateCapstoneData?.Course?.id,
+  );
+
+  const [nwssuCourse, setNwssuCourse] = useState(null);
+
+  useEffect(() => {
+    form2.setFieldsValue({
+      capstoneTypeUpdated: updateCapstoneData.status,
+      studentMembersUpdated: updateCapstoneData.studentMembers,
+      departmentUpdated: updateCapstoneData?.Course?.Departments?.depeartName,
+      courseUpdated: updateCapstoneData?.Course?.coursename,
+      titleUpdated: updateCapstoneData.title,
+      abstractUpdated: updateCapstoneData.abstract,
+      adviserUpdated: updateCapstoneData.adviser,
+      dateUpdated: dayjs(updateCapstoneData.date, "MM/DD/YYYY"),
+    });
+    setNwssuCourse(updateCapstoneData?.Course?.id);
+    setNwssuDepartment(updateCapstoneData?.Course?.id);
+  }, [updateModalCapstone]);
+
+  console.log("NWSSU COURSE ", nwssuCourse);
+  console.log("NWSSU DEPARTMEN ", nwssuDepartment);
+
   const handleDateChange = (date: any, dateString: any) => {
     const formattedDate = dayjs(dateString).format("MM/DD/YYYY");
     setPickerDate(formattedDate);
   };
 
-  console.log("HELLO ", approveData);
   const filteredApproveData =
     approveData?.filter((item: any) => {
       return (
-        item.studentCourse.toLowerCase().includes(searchValue.toLowerCase()) ||
-        item.topic.toLowerCase().includes(searchValue.toLowerCase()) ||
+        item.Course.coursename
+          .toLowerCase()
+          .includes(searchValue.toLowerCase()) ||
+        item.Course.Departments.depeartName
+          .toLowerCase()
+          .includes(searchValue.toLowerCase()) ||
         item.status.toLowerCase().includes(searchValue.toLowerCase()) ||
         item.abstract.toLowerCase().includes(searchValue.toLowerCase()) ||
         item.title.toLowerCase().includes(searchValue.toLowerCase()) ||
@@ -333,6 +407,61 @@ export function AdminCapstone() {
 
   // Get the length of filteredApproveData
   const filteredApproveDataLength = filteredApproveData.length;
+
+  const UpdateOnFinish = (e: any) => {
+    console.log("EEEEEEE", e);
+
+    const imageRef = imageUploadUpdate
+      ? ref(storage, `files/${imageUploadUpdate.name + v4()}`)
+      : null;
+    if (imageRef) {
+      uploadBytes(imageRef, imageUploadUpdate).then((data: any) => {
+        getDownloadURL(data.ref).then((d) => {
+          const course = courseData?.find((data) => data.id === e.course);
+          updateMutate({
+            id: updateCapstoneData.id,
+            // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+            course: nwssuCourse || "",
+            studentMembers: e.studentMembersUpdated,
+            title: e.titleUpdated,
+            topic: nwssuDepartment || "",
+            abstract: e.abstractUpdated,
+            adviser: e.adviserUpdated,
+            url: d || null,
+            date: dayjs(e.dateUpdated).format("MM/DD/YYYY"),
+            status: e.capstoneTypeUpdated,
+            courseId: nwssuCourse || "",
+          });
+        });
+      });
+    } else {
+      updateMutate({
+        id: updateCapstoneData.id,
+        // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+        course: nwssuCourse || "",
+        studentMembers: e.studentMembersUpdated,
+        title: e.titleUpdated,
+        topic: e.departmentUpdated,
+        abstract: e.abstractUpdated,
+        adviser: e.adviserUpdated,
+        url: updateCapstoneData.url,
+        date: dayjs(e.dateUpdated).format("MM/DD/YYYY"),
+        status: e.capstoneTypeUpdated,
+        courseId: nwssuCourse || "",
+      });
+    }
+  };
+
+  const handleDepartmentId = (event: any) => {
+    setNwssuDepartment(event);
+    setHandleDepartmentId(event);
+    form2.setFieldsValue("");
+    const course: any = departmentData?.find((data) => {
+      return data.id === event;
+    })?.Course;
+    form2.setFieldValue("courseUpdated", course[0] ? course[0].id : null);
+    setNwssuCourse(course[0] ? course[0].id : null);
+  };
 
   return (
     <div>
@@ -425,6 +554,8 @@ export function AdminCapstone() {
                       setIsModalOpenAbstract,
                       isModalOpenAbstract,
                       setAbstract,
+                      setUpdateModalCapstone,
+                      setUpdateCapstoneData,
                     ) as any
                   }
                   dataSource={filteredApproveData}
@@ -503,6 +634,7 @@ export function AdminCapstone() {
               <textarea
                 placeholder="Student Members"
                 className="  h-32   w-full border border-gray-200 p-4 "
+                defaultValue={updateCapstoneData.studentMembers}
               />
             </Form.Item>
 
@@ -559,7 +691,10 @@ export function AdminCapstone() {
                 },
               ]}
             >
-              <Input placeholder="Capstone Title" />
+              <Input
+                placeholder="Capstone Title"
+                value={updateCapstoneData.title}
+              />
             </Form.Item>
 
             <Form.Item
@@ -599,6 +734,175 @@ export function AdminCapstone() {
               form={form}
             />
             <Form.Item wrapperCol={{ offset: 8, span: 16 }}>
+              <Button
+                className="flex items-end bg-[#3b9783]  "
+                type="primary"
+                htmlType="submit"
+              >
+                Submit
+              </Button>
+            </Form.Item>
+          </Form>
+        </Modal>
+
+        <Modal
+          title="UPDATE CAPSTONE"
+          open={updateModalCapstone}
+          onOk={() => setUpdateModalCapstone(false)}
+          onCancel={() => setUpdateModalCapstone(false)}
+          centered
+          width={600}
+          footer={[]}
+        >
+          <Form
+            onFinish={UpdateOnFinish}
+            // onFinishFailed={onFinishFailedCapstoneForm}
+            autoComplete="off"
+            form={form2}
+          >
+            <Form.Item
+              name="capstoneTypeUpdated"
+              rules={[
+                {
+                  required: true,
+                  message: " Input  student leader",
+                },
+              ]}
+            >
+              <Select
+                size="small"
+                className="h-8 min-w-full flex-1 "
+                placeholder="Research Type"
+                options={[
+                  { value: "Capstone ", label: " Capstone" },
+                  { value: "Thesis", label: "Thesis" },
+                ]}
+                onChange={handleCapstoneType}
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="studentMembersUpdated"
+              rules={[
+                {
+                  required: true,
+                  message: " Input  Student  members",
+                },
+              ]}
+            >
+              <textarea
+                placeholder="Student Members"
+                className="  h-32   w-full border border-gray-200 p-4 "
+              />
+            </Form.Item>
+
+            <div className=" flex w-full   items-start justify-center gap-12">
+              <Form.Item
+                name="departmentUpdated"
+                rules={[
+                  { required: true, message: "Please input Department  " },
+                ]}
+              >
+                <Select
+                  className=" min-h-12    mt-1 w-full flex-1"
+                  size="small"
+                  style={{ width: 200 }}
+                  options={departmentOptions}
+                  defaultActiveFirstOption={true}
+                  placeholder={" Update Department"}
+                  onChange={handleDepartmentId}
+                />
+              </Form.Item>
+              <Form.Item
+                name="courseUpdated"
+                rules={[{ required: true, message: "Please Choose Course" }]}
+                className="w-full flex-1"
+              >
+                {courseData && (
+                  <Select
+                    placeholder="Update Course"
+                    size="small"
+                    className="h-8 min-w-full flex-1 "
+                    style={{ width: 200 }}
+                    // defaultActiveFirstOption
+                    options={[
+                      {
+                        label: "Select Course",
+                        options: !!FilterCourseUpdated?.length
+                          ? FilterCourseUpdated?.[0]?.Course.map((data) => ({
+                              label: data.coursename,
+                              value: data.id,
+                            }))
+                          : [],
+                      },
+                    ]}
+                  />
+                )}
+              </Form.Item>
+            </div>
+
+            <Form.Item
+              name="titleUpdated"
+              rules={[
+                {
+                  required: true,
+                  message: "Please input your Capstone title",
+                },
+              ]}
+            >
+              <Input placeholder="Capstone Title" />
+            </Form.Item>
+
+            <Form.Item
+              name="abstractUpdated"
+              rules={[{ required: true, message: "Please input Abstract  " }]}
+            >
+              <textarea
+                className="  h-32   w-full border border-gray-200 p-4"
+                placeholder="Input Abstract"
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="adviserUpdated"
+              rules={[
+                { required: true, message: "Please input Adviser Name  " },
+              ]}
+            >
+              <Input placeholder=" Adviser Name" />
+            </Form.Item>
+
+            <Form.Item
+              name="dateUpdated"
+              rules={[{ required: true, message: "Please  Select date  " }]}
+              label="Date of Submission"
+            >
+              <DatePicker onChange={handleDateChange} />
+            </Form.Item>
+
+            <AppUploaded
+              clickUpdateUrl={clickUpdateUrl}
+              imageUpload={imageUploadUpdate}
+              setImageUploadUpdate={setImageUploadUpdate}
+              setClickUpdateUrl={setClickUpdateUrl}
+              form={form}
+            />
+            <div className={` flex gap-3 ${clickUpdateUrl ? "hidden" : ""} `}>
+              <button
+                type="button"
+                onClick={() => setClickUpdateUrl(true)}
+                className="w-40 rounded-lg  bg-yellow-400 px-1 py-0 text-white  hover:bg-yellow-500"
+              >
+                Update File
+              </button>
+              <p>
+                {updateCapstoneData.url &&
+                  decodeURIComponent(
+                    updateCapstoneData.url.split("files%2F")[1].split("?")[0],
+                  ).substring(0, 50)}
+              </p>
+            </div>
+            <Form.Item className="mt-5" wrapperCol={{ offset: 8, span: 16 }}>
               <Button
                 className="flex items-end bg-[#3b9783]  "
                 type="primary"

@@ -65,7 +65,6 @@ export default function Home() {
         window.alert("Successfully Registered");
         router.push("/");
       } else {
-        console.log("awawawawwawawa");
       }
     },
   });

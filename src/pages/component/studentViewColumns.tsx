@@ -18,8 +18,6 @@ export const studentsViewColumn: any = (studentData: any) => {
       dataIndex: "Students",
       key: "course",
       render: (_: any, record: any) => {
-        console.log("WWWWWw", _);
-
         return (
           <Space size="middle">
             <span>{_?.[0]?.Course?.coursename}</span>

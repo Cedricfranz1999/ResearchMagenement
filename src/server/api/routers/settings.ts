@@ -10,10 +10,28 @@ import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 
 export const settingsRouter = createTRPCRouter({
   getListOfDepartment: publicProcedure.query(({ ctx }) => {
-    return ctx.prisma.department.findMany();
+    return ctx.prisma.department.findMany({
+      include: {
+        Course: {
+          select: {
+            coursename: true,
+            id: true,
+          },
+        },
+      },
+    });
   }),
 
   FilterCourseByDepartment: publicProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ ctx, input }) => {
+      return ctx.prisma.department.findMany({
+        where: { id: input.id },
+        include: { Course: true },
+      });
+    }),
+
+  UpdateFilterCourseByDepartment: publicProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ ctx, input }) => {
       return ctx.prisma.department.findMany({
@@ -84,6 +102,62 @@ export const settingsRouter = createTRPCRouter({
         data: {
           username: input.name,
           password: input.password,
+        },
+      });
+
+      return createCapstone;
+    }),
+
+  FindCourse: publicProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ ctx, input }) => {
+      return ctx.prisma.department.findMany({
+        where: { id: input.id },
+      });
+    }),
+
+  FindDepartment: publicProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ ctx, input }) => {
+      return ctx.prisma.course.findMany({
+        where: { id: input.id },
+      });
+    }),
+
+  updateCourse: publicProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const createCapstone = await ctx.prisma.course.update({
+        where: {
+          id: input.id,
+        },
+        data: {
+          coursename: input.name,
+        },
+      });
+
+      return createCapstone;
+    }),
+
+  updateDepartment: publicProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const createCapstone = await ctx.prisma.department.update({
+        where: {
+          id: input.id,
+        },
+        data: {
+          depeartName: input.name,
         },
       });
 

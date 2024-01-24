@@ -30,6 +30,7 @@ model Course {
     Departments Department   @relation(fields: [departmentid], references: [id])
     createdAt  DateTime   @default(now())
     updatedAt  DateTime   @updatedAt
+    Capstone Capstone[]
     Students   Students[]
 
     
@@ -54,6 +55,8 @@ model Capstone {
     date          String
     studentMembers       String
     status        String
+    courseId String?
+    Course Course? @relation(fields: [courseId],references: [id])
     createdAt     DateTime   @default(now())
     updatedAt     DateTime   @updatedAt
     Students      Students[]

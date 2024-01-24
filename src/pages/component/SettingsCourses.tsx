@@ -1,14 +1,47 @@
-import { ConfigProvider, Modal, Select, Table } from "antd";
-import React, { useState } from "react";
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+import { Button, ConfigProvider, Modal, Select, Space, Table } from "antd";
+import React, { useEffect, useState } from "react";
 import { api } from "~/utils/api";
 import { BiSolidAddToQueue } from "react-icons/bi";
 import { ref } from "firebase/storage";
 import { title } from "process";
+import { TiEdit } from "react-icons/ti";
 
 function SettingsCourses() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [courseValue, setCourseValue] = useState<any>("");
+  const [courseName, setCourseName] = useState<any>("");
 
-  const column = [{ title: "Course Name", dataIndex: "coursename" }];
+  useEffect(() => {
+    setCourseName(courseValue?.coursename || "");
+  }, [isModalOpen]);
+
+  console.log("COURSE COURSE ", courseName);
+
+  const column = [
+    { title: "Course Name", dataIndex: "coursename" },
+    {
+      title: "Action",
+      key: "course",
+      render: (_: any, record: any) => {
+        return (
+          <div
+            className="flex items-center justify-center gap-4"
+            onClick={() => {
+              setIsModalOpen(true);
+              setCourseValue(_);
+            }}
+          >
+            <Button className="flex w-fit flex-row items-center justify-center gap-2 rounded bg-yellow-300 px-4">
+              <TiEdit />
+              <a> Update </a>
+            </Button>
+          </div>
+        );
+      },
+    },
+  ];
   const [departmentName, setDepartmentName] = useState("");
   const { data: departmentData, refetch: refetchData } =
     api.settings.getListOfDepartment.useQuery();
@@ -28,12 +61,22 @@ function SettingsCourses() {
     },
   });
 
+  const { mutate: updateCourseMutate } = api.settings.updateCourse.useMutation({
+    onSuccess: () => {
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
+      refetch();
+    },
+  });
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
   const { data, refetch } = api.settings.getListOfCourses.useQuery({
     departmentId: departmentId,
   });
 
   const addDeparment = () => {
     if (departmentName !== "" ?? null ?? undefined) {
+      setDepartmentName("");
       mutate({
         name: departmentName,
         departmentId: departmentId,
@@ -48,6 +91,14 @@ function SettingsCourses() {
   const DepartmentValue = (value: string) => {
     setDepartmentId(value);
   };
+
+  const handleUpdateCourse = () => {
+    updateCourseMutate({
+      id: courseValue.id,
+      name: courseName,
+    });
+  };
+
   return (
     <div>
       <ConfigProvider
@@ -63,6 +114,29 @@ function SettingsCourses() {
           },
         }}
       >
+        <Modal
+          open={isModalOpen}
+          centered
+          footer={[]}
+          className="px-4"
+          onCancel={() => setIsModalOpen(false)}
+        >
+          <div className="  flex  items-center justify-start  gap-3  pr-5">
+            <p> COURSE: </p>
+            <input
+              onChange={(event) => setCourseName(event.target.value)}
+              value={courseName}
+              className="  w-full rounded-lg  border border-black pl-5 "
+            ></input>
+            <button
+              onClick={handleUpdateCourse}
+              className=" rounded-lg bg-yellow-500  p-1"
+            >
+              {" "}
+              UPDATE
+            </button>
+          </div>
+        </Modal>
         <div className=" flex flex-col items-end  justify-end   gap-1">
           <div className=" flex items-center justify-center gap-3">
             <small>Department Name:</small>
@@ -86,6 +160,7 @@ function SettingsCourses() {
             <input
               onChange={(e) => setDepartmentName(e.target.value)}
               className="  h-6  w-36   rounded-sm border  border-[#3b9783] pl-2 "
+              value={departmentName}
             />
           </div>
           <div

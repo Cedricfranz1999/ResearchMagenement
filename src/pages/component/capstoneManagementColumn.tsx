@@ -4,15 +4,18 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { Button, Image, Space, Tag } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import { DataType } from "../dataType/types";
+import { useRouter } from "next/router";
 import { BsDownload } from "react-icons/bs";
 import { BsCheckCircleFill } from "react-icons/bs";
 import { IoDocumentTextSharp } from "react-icons/io5";
+import { TiEdit } from "react-icons/ti";
 
 export const capstoneManagementColumn = (
   setIsModalOpenAbstract: any,
   isModalOpenAbstract: any,
   setAbstract: any,
+  setUpdateModalCapstone: any,
+  setCapstoneData: any,
 ) => {
   return [
     {
@@ -22,7 +25,7 @@ export const capstoneManagementColumn = (
       render: (_: any, record: any) => {
         return (
           <Space size="middle">
-            <span>{record.topic}</span>
+            <span>{record.Course.Departments.depeartName}</span>
           </Space>
         );
       },
@@ -34,7 +37,7 @@ export const capstoneManagementColumn = (
       render: (_: any, record: any) => {
         return (
           <Space size="middle">
-            <span className=" flex gap-3">{record.studentCourse}</span>
+            <span className=" flex gap-3">{record.Course.coursename}</span>
           </Space>
         );
       },
@@ -88,16 +91,39 @@ export const capstoneManagementColumn = (
     {
       title: <></>,
       key: "action",
-      width: "25%",
+      width: "10%",
       render: (_: any, record: any) => (
-        <div className=" flex  items-start justify-center gap-4">
+        <div className=" flex   items-center gap-4">
           <Button
             href={_.url}
             size="middle"
-            className=" flex w-fit flex-row gap-2  rounded bg-blue-300 px-4"
+            className=" flex w-fit flex-row gap-2     rounded bg-blue-300 px-4 text-white"
           >
             <BsDownload />
             <a> Dowload </a>
+          </Button>
+        </div>
+      ),
+    },
+
+    {
+      title: "Action",
+      key: "action",
+      width: "10%",
+
+      render: (_: any, record: any) => (
+        <div className=" flex  items-center justify-center gap-4">
+          <Button
+            className=" flex w-fit flex-row items-center  justify-center     gap-2 rounded bg-yellow-300 px-4  "
+            onClick={() => {
+              setCapstoneData(record);
+
+              setUpdateModalCapstone(true);
+            }}
+          >
+            <TiEdit />
+
+            <a> Update </a>
           </Button>
         </div>
       ),
